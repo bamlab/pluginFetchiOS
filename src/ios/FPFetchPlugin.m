@@ -79,13 +79,8 @@
 
 - (NSURLSession *)_downloadSessionForId:(NSString *)sessionId {
     if (sessionId) {
-        static NSURLSession * backgroundSession = nil;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            NSURLSessionConfiguration * config = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:sessionId];
-            backgroundSession = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
-        });
-        return backgroundSession;
+        NSURLSessionConfiguration * config = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:sessionId];
+        return [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
     }
     return nil;
 }
@@ -105,10 +100,13 @@
         for (NSString * chunkUrl in self.arguments) {
             NSData * retrievedData = [fileManager contentsAtPath:[self.responseDict objectForKey:chunkUrl]];
             [responseData appendData:retrievedData];
+            [fileManager removeItemAtPath:[self.responseDict objectForKey:chunkUrl] error:NULL];
         }
         self.responseDict = nil;
         NSError * error;
-        NSDictionary * jsonDict = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:&error];
+        NSDictionary * jsonDict = [NSJSONSerialization JSONObjectWithData:responseData
+                                                                  options:session == self.fetchAndProcessJsonFilesDownloadSession ? NSJSONReadingMutableContainers : 0
+                                                                    error:&error];
         if ([jsonDict isKindOfClass:[NSDictionary class]]) {
             if (session == self.fetchAndProcessJsonFilesDownloadSession) {
                 if ([jsonDict objectForKey:@"places"]) {
@@ -131,8 +129,10 @@
                         }
                     }
                 }
-                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:jsonDict];
-                [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
+                NSData * jsonData =[NSJSONSerialization dataWithJSONObject:jsonDict options:0 error:NULL];
+                NSString * jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:jsonString];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessJsonFilesCommandCallbackId];
                 return;
             } else {
                 if ([jsonDict objectForKey:@"maptile"]) {
