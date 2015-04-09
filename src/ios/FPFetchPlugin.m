@@ -135,6 +135,13 @@
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessJsonFilesCommandCallbackId];
                 return;
             } else {
+                NSMutableDictionary* progressObj = [NSMutableDictionary dictionaryWithCapacity:3];
+                [progressObj setObject:[NSNumber numberWithInteger:4] forKey:@"step"];
+                NSMutableDictionary* resObj = [NSMutableDictionary dictionaryWithCapacity:1];
+                [resObj setObject:progressObj forKey:@"progress"];
+                CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:resObj];
+                pluginResult.keepCallback = [NSNumber numberWithInteger: TRUE];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
                 if ([jsonDict objectForKey:@"maptile"]) {
                     for (NSDictionary * tileDict in [jsonDict objectForKey:@"maptile"]) {
                         if ([tileDict objectForKey:@"tileFile"]  && [[tileDict objectForKey:@"tileFile"] objectForKey:@"url"]) {
@@ -160,6 +167,25 @@
             }
             [self _sendError:self.fetchAndProcessJsonFilesDownloadSession == session ? self.fetchAndProcessJsonFilesCommandCallbackId : self.fetchAndProcessTilesFilesCommandCallbackId];
         }
+    } else {
+        NSString * progress = [NSString stringWithFormat:@"%ld remaining parts to download", (long)([self.arguments count] - [self.responseDict count])];
+        NSMutableDictionary* progressObj = [NSMutableDictionary dictionaryWithCapacity:3];
+        [progressObj setObject:progress forKey:@"message"];
+        NSNumber * nbChunksDl = [NSNumber numberWithInteger:[self.responseDict count]];
+        [progressObj setObject:nbChunksDl forKey:@"chunksDownloaded"];
+        NSNumber * nbChunksTotal = [NSNumber numberWithInteger:[self.arguments count]];
+        [progressObj setObject:nbChunksTotal forKey:@"chunksTotal"];
+        NSMutableDictionary* resObj = [NSMutableDictionary dictionaryWithCapacity:1];
+        [resObj setObject:progressObj forKey:@"progress"];
+        CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:resObj];
+        pluginResult.keepCallback = [NSNumber numberWithInteger: TRUE];
+        if (session == self.fetchAndProcessJsonFilesDownloadSession) {
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessJsonFilesCommandCallbackId];
+        } else {
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
+        }
+        
+
     }
 }
 
