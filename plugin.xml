@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+        id="fr.bamlab.fetchiOS"
+        version="0.1.0">
+
+  <name>FetchPlugin</name>
+
+  <platform name="ios">
+    <config-file target="config.xml" parent="/*">
+      <feature name="FetchPlugin">
+        <param name="ios-package" value="FPFetchPlugin" />
+      </feature>
+    </config-file>
+
+    <header-file src="src/ios/FPFetchPlugin.h" target-dir="FetchPlugin"/>
+    <source-file src="src/ios/FPFetchPlugin.m" target-dir="FetchPlugin"/>
+    <header-file src="src/ios/NSData+Base64.h" target-dir="FetchPlugin"/>
+    <source-file src="src/ios/NSData+Base64.m" target-dir="FetchPlugin"/>
+  </platform>
+
+</plugin>
