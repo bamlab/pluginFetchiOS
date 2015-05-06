@@ -109,23 +109,36 @@
                                                                     error:&error];
         if ([jsonDict isKindOfClass:[NSDictionary class]]) {
             if (session == self.fetchAndProcessJsonFilesDownloadSession) {
-                if ([jsonDict objectForKey:@"places"]) {
-                    for (NSDictionary * placeDict in [jsonDict objectForKey:@"places"]) {
-                        if ([placeDict objectForKey:@"picture"]  && [[placeDict objectForKey:@"picture"] objectForKey:@"url"]) {
-                            NSString * imageString = [[placeDict objectForKey:@"picture"] objectForKey:@"url"];
-                            imageString = [imageString stringByReplacingOccurrencesOfString:@"data:image/png;base64," withString:@""];
-                            NSData * imageData = [[NSData alloc] initWithBase64Encoding:imageString];
-                            NSURL * libDirectory = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask][0];
-                            NSURL * noCloudURL = [libDirectory URLByAppendingPathComponent:@"NoCloud"];
-                            NSError * dirExistsError = nil;
-                            if (![fileManager fileExistsAtPath:[noCloudURL path]]) {
-                                [fileManager createDirectoryAtPath:[noCloudURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
+                // get the "zone.objectId" (in jsonDict.zone.objectId)
+                if ([jsonDict objectForKey:@"zone"]) {
+                    NSString * zoneId = [[jsonDict objectForKey:@"zone"] objectForKey:@"objectId"];
+                    if ([jsonDict objectForKey:@"places"]) {
+                        for (NSDictionary * placeDict in [jsonDict objectForKey:@"places"]) {
+                            if ([placeDict objectForKey:@"picture"]  && [[placeDict objectForKey:@"picture"] objectForKey:@"url"]) {
+                                NSString * imageString = [[placeDict objectForKey:@"picture"] objectForKey:@"url"];
+                                imageString = [imageString stringByReplacingOccurrencesOfString:@"data:image/png;base64," withString:@""];
+                                NSData * imageData = [[NSData alloc] initWithBase64Encoding:imageString];
+                                NSURL * libDirectory = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask][0];
+                                NSURL * noCloudURL = [libDirectory URLByAppendingPathComponent:@"NoCloud"];
+                                NSError * dirExistsError = nil;
+                                if (![fileManager fileExistsAtPath:[noCloudURL path]]) {
+                                    [fileManager createDirectoryAtPath:[noCloudURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
+                                }
+
+
+                                // enter the "zone.objectId" dir
+                                NSURL * zoneDirURL = [noCloudURL URLByAppendingPathComponent:zoneId];
+                                if (![fileManager fileExistsAtPath:[zoneDirURL path]]) {
+                                    [fileManager createDirectoryAtPath:[zoneDirURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
+                                }
+
+
+                                NSString * placeFileName = [NSString stringWithFormat:@"place_%@", [placeDict objectForKey:@"objectId"]];
+                                NSURL * placePath = [zoneDirURL URLByAppendingPathComponent:placeFileName];
+                                [fileManager removeItemAtURL:placePath error:NULL];
+                                [imageData writeToURL:placePath atomically:NO];
+                                [[placeDict objectForKey:@"picture"] setObject:[placePath path] forKey:@"url"];
                             }
-                            NSString * placeFileName = [NSString stringWithFormat:@"place_%@", [placeDict objectForKey:@"objectId"]];
-                            NSURL * placePath = [noCloudURL URLByAppendingPathComponent:placeFileName];
-                            [fileManager removeItemAtURL:placePath error:NULL];
-                            [imageData writeToURL:placePath atomically:NO];
-                            [[placeDict objectForKey:@"picture"] setObject:[placePath path] forKey:@"url"];
                         }
                     }
                 }
