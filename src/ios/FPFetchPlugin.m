@@ -119,19 +119,19 @@
                                 imageString = [imageString stringByReplacingOccurrencesOfString:@"data:image/png;base64," withString:@""];
                                 NSData * imageData = [[NSData alloc] initWithBase64Encoding:imageString];
                                 NSURL * libDirectory = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask][0];
+
+                                // enter the noCloud directory
                                 NSURL * noCloudURL = [libDirectory URLByAppendingPathComponent:@"NoCloud"];
                                 NSError * dirExistsError = nil;
                                 if (![fileManager fileExistsAtPath:[noCloudURL path]]) {
                                     [fileManager createDirectoryAtPath:[noCloudURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
                                 }
 
-
                                 // enter the "zone.objectId" dir
                                 NSURL * zoneDirURL = [noCloudURL URLByAppendingPathComponent:zoneId];
                                 if (![fileManager fileExistsAtPath:[zoneDirURL path]]) {
                                     [fileManager createDirectoryAtPath:[zoneDirURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
                                 }
-
 
                                 NSString * placeFileName = [NSString stringWithFormat:@"place_%@", [placeDict objectForKey:@"objectId"]];
                                 NSURL * placePath = [zoneDirURL URLByAppendingPathComponent:placeFileName];
@@ -155,27 +155,41 @@
                 CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:resObj];
                 pluginResult.keepCallback = [NSNumber numberWithInteger: TRUE];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
-                if ([jsonDict objectForKey:@"maptile"]) {
-                    for (NSDictionary * tileDict in [jsonDict objectForKey:@"maptile"]) {
-                        if ([tileDict objectForKey:@"tileFile"]  && [[tileDict objectForKey:@"tileFile"] objectForKey:@"url"]) {
-                            NSString * imageString = [[tileDict objectForKey:@"tileFile"] objectForKey:@"url"];
-                            imageString = [imageString stringByReplacingOccurrencesOfString:@"data:image/png;base64," withString:@""];
-                            NSData * imageData = [[NSData alloc] initWithBase64Encoding:imageString];
-                            NSURL * libDirectory = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask][0];
-                            NSURL * noCloudURL = [libDirectory URLByAppendingPathComponent:@"NoCloud"];
-                            NSError * dirExistsError = nil;
-                            if (![fileManager fileExistsAtPath:[noCloudURL path]]) {
-                                [fileManager createDirectoryAtPath:[noCloudURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
+
+                // get the "zone.objectId" (in jsonDict.zone.objectId)
+                if ([jsonDict objectForKey:@"zone"]) {
+                    NSString * zoneId = [[jsonDict objectForKey:@"zone"] objectForKey:@"objectId"];
+                    if ([jsonDict objectForKey:@"maptile"]) {
+                        for (NSDictionary * tileDict in [jsonDict objectForKey:@"maptile"]) {
+                            if ([tileDict objectForKey:@"tileFile"]  && [[tileDict objectForKey:@"tileFile"] objectForKey:@"url"]) {
+                                NSString * imageString = [[tileDict objectForKey:@"tileFile"] objectForKey:@"url"];
+                                imageString = [imageString stringByReplacingOccurrencesOfString:@"data:image/png;base64," withString:@""];
+                                NSData * imageData = [[NSData alloc] initWithBase64Encoding:imageString];
+                                NSURL * libDirectory = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask][0];
+
+                                // enter the noCloud directory
+                                NSURL * noCloudURL = [libDirectory URLByAppendingPathComponent:@"NoCloud"];
+                                NSError * dirExistsError = nil;
+                                if (![fileManager fileExistsAtPath:[noCloudURL path]]) {
+                                    [fileManager createDirectoryAtPath:[noCloudURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
+                                }
+
+                                // enter the "zone.objectId" dir
+                                NSURL * zoneDirURL = [noCloudURL URLByAppendingPathComponent:zoneId];
+                                if (![fileManager fileExistsAtPath:[zoneDirURL path]]) {
+                                    [fileManager createDirectoryAtPath:[zoneDirURL path] withIntermediateDirectories:NO attributes:nil error:&dirExistsError];
+                                }
+
+                                NSString * tileFileName = [NSString stringWithFormat:@"tile_%ld_%ld_%ld.png", (long)[[tileDict objectForKey:@"zoom"] integerValue], (long)[[tileDict objectForKey:@"x"] integerValue], (long)[[tileDict objectForKey:@"y"] integerValue]];
+                                NSURL * tilePath = [zoneDirURL URLByAppendingPathComponent:tileFileName];
+                                [fileManager removeItemAtURL:tilePath error:NULL];
+                                [imageData writeToURL:tilePath atomically:NO];
                             }
-                            NSString * tileFileName = [NSString stringWithFormat:@"tile_%ld_%ld_%ld.png", (long)[[tileDict objectForKey:@"zoom"] integerValue], (long)[[tileDict objectForKey:@"x"] integerValue], (long)[[tileDict objectForKey:@"y"] integerValue]];
-                            NSURL * tilePath = [noCloudURL URLByAppendingPathComponent:tileFileName];
-                            [fileManager removeItemAtURL:tilePath error:NULL];
-                            [imageData writeToURL:tilePath atomically:NO];
                         }
+                        CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Tiles stored locally!"];
+                        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
+                        return;
                     }
-                    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Tiles stored locally!"];
-                    [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
-                    return;
                 }
             }
             [self _sendError:self.fetchAndProcessJsonFilesDownloadSession == session ? self.fetchAndProcessJsonFilesCommandCallbackId : self.fetchAndProcessTilesFilesCommandCallbackId];
@@ -197,7 +211,6 @@
         } else {
             [self.commandDelegate sendPluginResult:pluginResult callbackId:self.fetchAndProcessTilesFilesCommandCallbackId];
         }
-        
 
     }
 }
