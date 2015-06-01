@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
-        id="fr.bamlab.fetchiOS"
+        id="fr.bamlab.fetch-ios"
         version="0.1.0">
 
   <name>FetchPlugin</name>
@@ -12,10 +12,10 @@
       </feature>
     </config-file>
 
-    <header-file src="src/ios/FPFetchPlugin.h" target-dir="FetchPlugin"/>
-    <source-file src="src/ios/FPFetchPlugin.m" target-dir="FetchPlugin"/>
-    <header-file src="src/ios/NSData+Base64.h" target-dir="FetchPlugin"/>
-    <source-file src="src/ios/NSData+Base64.m" target-dir="FetchPlugin"/>
+    <header-file src="src/ios/FPFetchPlugin.h"/>
+    <source-file src="src/ios/FPFetchPlugin.m"/>
+    <header-file src="src/ios/NSData+Base64.h"/>
+    <source-file src="src/ios/NSData+Base64.m"/>
   </platform>
 
 </plugin>
